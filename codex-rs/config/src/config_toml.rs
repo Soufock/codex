@@ -191,6 +191,11 @@ pub struct ConfigToml {
     #[schemars(range(min = 0, max = 100))]
     pub model_post_turn_compact_threshold_percent: Option<u8>,
 
+    /// Fixed retry delay in seconds that replaces server-provided `Retry-After`
+    /// advice (header or streamed error) when waiting to retry a failed model
+    /// request. When unset, the server-advised delay is honored.
+    pub override_retry_after_seconds: Option<u64>,
+
     /// Default approval policy for executing commands.
     #[schemars(with = "Option<crate::schema::ConfigAskForApproval>")]
     pub approval_policy: Option<AskForApproval>,

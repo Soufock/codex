@@ -362,7 +362,11 @@ async fn run_compact_task_inner_impl(
                 let Some(delay) = e.retry_delay(retries) else {
                     return Err(e);
                 };
-                let retry_after = e.retry_after();
+                let retry_after = turn_context
+                    .config
+                    .override_retry_after
+                    .and_then(RetryAfter::from_delay)
+                    .or_else(|| e.retry_after());
                 sess.notify_stream_error(
                     turn_context.as_ref(),
                     format!("Reconnecting... {retries}/{max_retries}"),

@@ -8831,6 +8831,12 @@
       ],
       "description": "OTEL configuration."
     },
+    "override_retry_after_seconds": {
+      "description": "Fixed retry delay in seconds that replaces server-provided `Retry-After` advice (header or streamed error) when waiting to retry a failed model request. When unset, the server-advised delay is honored.",
+      "format": "uint64",
+      "minimum": 0.0,
+      "type": "integer"
+    },
     "permissions": {
       "allOf": [
         {

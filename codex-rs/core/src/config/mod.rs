@@ -687,6 +687,10 @@ pub struct Config {
     /// Zero disables turn-end compaction.
     pub model_post_turn_compact_threshold_percent: u8,
 
+    /// Fixed retry delay that replaces server-provided `Retry-After` advice when
+    /// waiting to retry a failed model request. `None` honors the server advice.
+    pub override_retry_after: Option<Duration>,
+
     /// Percentage of the model's full context window at which background compaction starts.
     pub async_compaction_threshold_percent: u8,
 
@@ -4572,6 +4576,7 @@ impl Config {
             model_post_turn_compact_threshold_percent: cfg
                 .model_post_turn_compact_threshold_percent
                 .unwrap_or_default(),
+            override_retry_after: cfg.override_retry_after_seconds.map(Duration::from_secs),
             async_compaction_threshold_percent,
             model_provider_id,
             model_provider,

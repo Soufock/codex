@@ -98,3 +98,39 @@ async fn stream_retry_preserves_deadline_across_delayed_notification() {
         "retry resumed at {resumed_at:?}, expected {advice:?}"
     );
 }
+
+/// A configured `override_retry_after` replaces the server-advised Retry-After deadline.
+#[tokio::test]
+async fn stream_retry_prefers_configured_retry_after_override() {
+    let (mut session, mut turn_context) = make_session_and_context().await;
+    Arc::make_mut(&mut turn_context.config).override_retry_after = Some(Duration::from_secs(2));
+    let step_context = StepContext::for_test(Arc::new(turn_context));
+    session.realtime_history = Some(Mutex::new(RealtimeHistoryState::default()));
+    let mut client_session = session.services.model_client.new_session();
+    let mut retry_state = ResponsesStreamRetryState::default();
+
+    tokio::time::pause();
+    // The server advises a much longer delay than the configured override.
+    let advice = RetryAfter::from_delay(Duration::from_secs(10)).expect("retry deadline");
+    let start = Instant::now();
+
+    handle_response_stream_error(
+        &mut retry_state,
+        /*max_retries*/ 2,
+        CodexErr::ServerOverloaded.with_retry_after(advice),
+        &mut client_session,
+        &session,
+        &step_context,
+        ResponsesStreamRequest::Sampling,
+    )
+    .await
+    .expect("retry should be allowed");
+
+    // Tokio rounds timer deadlines up to the next millisecond.
+    let override_deadline = start + Duration::from_secs(2);
+    let resumed_at = Instant::now();
+    assert!(
+        (override_deadline..=override_deadline + Duration::from_millis(1)).contains(&resumed_at),
+        "retry resumed at {resumed_at:?}, expected configured override {override_deadline:?}"
+    );
+}
